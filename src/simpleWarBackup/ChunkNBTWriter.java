@@ -40,6 +40,7 @@ public final class ChunkNBTWriter
 	 */
 	public static NBTTagCompound write(Chunk chunk, World world)
 	{
+		System.out.println("ChunkNBTWriter.write has been called");//TODO
 		NBTTagCompound chunkNBT = new NBTTagCompound();
         NBTTagCompound levelNBT = new NBTTagCompound();
 

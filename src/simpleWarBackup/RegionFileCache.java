@@ -29,6 +29,7 @@ public class RegionFileCache
 	 */
 	public static synchronized RegionFile get(File backupFolder, int x, int z) 
 	{
+		System.out.println("RegionFileCache.get has been called");//TODO
 		x >>= 5; z >>= 5;
 		File regionFolder      = new File(backupFolder, "region");
 		File regionFileFile    = new File(regionFolder, "r." + x + "." + z + ".mca");

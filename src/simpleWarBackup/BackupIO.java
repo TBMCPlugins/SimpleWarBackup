@@ -93,6 +93,7 @@ public class BackupIO
 	 */
 	public static void backupChunks(String backup, World world, Chunk... chunks) throws IOException
 	{
+		System.out.println("backupChunks has been called");//TODO
 		final File folder = backups.get(world).get(backup);
 		final net.minecraft.server.v1_12_R1.World worldNMS
 			= ((CraftWorld) world).getHandle();

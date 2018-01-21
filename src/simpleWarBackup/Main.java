@@ -32,16 +32,19 @@ public class Main extends JavaPlugin implements Listener
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args)
 	{
 		if (!(sender instanceof Player) || !sender.getName().equals("iie")) return false;
+		System.out.println("player is iie");//TODO
 		
 		Location loc = ((Player) sender).getLocation();
 		
 		World world = loc.getWorld();
 		Chunk chunk = loc.getChunk();
 		
-		if (label.equals("testBackupChunk"))
+		if (command.getName().equals("testBackupChunk"))
 		{
+			System.out.println("command label = testBackupChunk");//TODO
 			try {
 				BackupIO.backupChunks("test", world, chunk);
+				System.out.println("tried BackupIO.backupChunks");//TODO
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

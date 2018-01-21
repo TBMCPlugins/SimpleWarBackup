@@ -2,7 +2,7 @@ main: simpleWarBackup.Main
 version: 1.0.0
 name: SimpleWarBackup
 commands:
-  testBackupChun:
+  testBackupChunk:
     description: only iie gets to do this
   testRestoreChunk:
     description: only iie gets to do this, too

@@ -38,7 +38,7 @@ public final class ChunkNBTWriter
 	 * @param DATA_VERSION
 	 * @return
 	 */
-	public static NBTTagCompound getChunkNBT(Chunk chunk, World world)
+	public static NBTTagCompound write(Chunk chunk, World world)
 	{
 		NBTTagCompound chunkNBT = new NBTTagCompound();
         NBTTagCompound levelNBT = new NBTTagCompound();
@@ -67,7 +67,7 @@ public final class ChunkNBTWriter
 	 * @param chunk
 	 * @param world
 	 */
-	public static void saveEntities(NBTTagCompound levelNBT, Chunk chunk, World world) 
+	private static void saveEntities(NBTTagCompound levelNBT, Chunk chunk, World world) 
 	{
 		//the three TagLists to be written to levelNBT
 		NBTTagList			entitiesNBT		  = new NBTTagList();
@@ -150,7 +150,7 @@ public final class ChunkNBTWriter
 	 * @param worldTime
 	 * @param worldHasSkyLight
 	 */
-	public static void saveBody(NBTTagCompound levelNBT, Chunk chunk, World world) 
+	private static void saveBody(NBTTagCompound levelNBT, Chunk chunk, World world) 
 	{
 		/* passed variables worldTime and worldHasSkyLight have been 
 		 * replaced with world. The values are now obtained directly:

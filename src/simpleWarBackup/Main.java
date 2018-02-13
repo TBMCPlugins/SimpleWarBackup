@@ -23,37 +23,56 @@ public class Main extends JavaPlugin implements Listener
 		getCommand("testBackupChunk").setExecutor(this);
 		getCommand("testRestoreChunk").setExecutor(this);
 		
-		File dataFolder = this.getDataFolder(); 
-		BackupIO.initialize(dataFolder, 
-		                    new File(dataFolder, 
-		                    		"Backup Files"));
+		BackupIO.initialize(this);
 	}
 	
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args)
 	{
-		if (!(sender instanceof Player) || !sender.getName().equals("iie")) return false;
-		System.out.println("player is iie");//TODO
+		if (!(sender instanceof Player))      return false; 
+		if (!sender.getName().equals("iie"))  return false;
 		
+		sender.sendMessage("some command received");
 		Location loc = ((Player) sender).getLocation();
+		World world  = loc.getWorld();
+		Chunk chunk  = loc.getChunk();
 		
-		World world = loc.getWorld();
-		Chunk chunk = loc.getChunk();
+		//test-chunks to be test-restored
+		int[][] xz = {{187, 187}, 
+		              {40 , 40 }};
 		
 		if (command.getName().equals("testBackupChunk"))
 		{
-			System.out.println("command label = testBackupChunk");//TODO
-			try {
-				BackupIO.backupChunks("test", world, chunk);
-				System.out.println("tried BackupIO.backupChunks");//TODO
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			try { BackupIO.backup((CraftWorld) world, "test", (CraftChunk) chunk); }
+			catch (IOException e) { e.printStackTrace(); }
 		}
-		
-		else if (label.equals("testRestoreChunk"))
+		else if (command.getName().equals("testRestoreChunk"))
 		{
-			
+			sender.sendMessage("testRestoreChunk command received");
+			for (int[] coords : xz)
+			{
+				if (world.isChunkLoaded(coords[0], coords[1]))
+				{
+					sender.sendMessage("chunk " + coords[0] + ", " + coords[1] + " is still loaded");
+					return false;
+				}
+			}
+			{
+				sender.sendMessage("chunk is not loaded");
+				try 
+				{ 
+					for (int[] coords : xz)
+					{
+						sender.sendMessage(
+								BackupIO.restoreTest(coords[0], coords[1]) ? "restore worked" : 
+								                                             "restore failed");
+					}
+				} 
+			    catch (IOException e) 
+				{ 
+			    	e.printStackTrace(); 
+			    	sender.sendMessage("IOException, restore failed");
+			    }
+			}
 		}
 		return true;
 	}

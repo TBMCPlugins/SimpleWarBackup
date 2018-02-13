@@ -20,7 +20,7 @@ import net.minecraft.server.v1_12_R1.World;
  * methods in ChunkRegionLoader, an NMS class. Changes have been commented, so that these
  * methods may be more easily updated as Spigot releases newer versions.
  */
-public final class ChunkNBTWriter 
+public final class ChunkNBTTools 
 {
 	/**
 	 * To find the new data version after an update,
@@ -38,7 +38,7 @@ public final class ChunkNBTWriter
 	 * @param DATA_VERSION
 	 * @return
 	 */
-	public static NBTTagCompound write(Chunk chunk, World world)
+	public static NBTTagCompound save(Chunk chunk, World world)
 	{
 		System.out.println("ChunkNBTWriter.write has been called");//TODO
 		NBTTagCompound chunkNBT = new NBTTagCompound();
@@ -47,8 +47,8 @@ public final class ChunkNBTWriter
         chunkNBT.set("Level", levelNBT);
         chunkNBT.setInt("DataVersion", DATA_VERSION);
         
-        ChunkNBTWriter.saveEntities(levelNBT, chunk, world);
-        ChunkNBTWriter.saveBody(levelNBT, chunk, world);
+        ChunkNBTTools.saveEntities(levelNBT, chunk, world);
+        ChunkNBTTools.saveBody(levelNBT, chunk, world);
         
         return chunkNBT;
 	}

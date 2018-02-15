@@ -175,6 +175,8 @@ public class BackupIO
 				NBTCompressedStreamTools.a(dataInput), 
 				(java.io.DataOutput) dataOutput);
 		
+		dataOutput.close();
+		
 		return true;
 	}
 }

@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -89,6 +90,7 @@ public final class RegionFileCache
 			catch (IOException e) { e.printStackTrace(); }
 		}
 		RegionFileCache.cache.clear();
+		RegionFileCache.cacheRAF.clear();
 	}
 	
 	
@@ -133,16 +135,34 @@ public final class RegionFileCache
 	
 	
 	
-	/*-------------------------------RandomAccessFiles-------------------------------*/
+	/*---------------------------------Chunk Access---------------------------------*/
 	
 	/* RegionFiles keep their actual .mca files private, but those bytes can be useful 
 	 * to read. The auxiliary cache below stores, for each cached RegionFile, a read-only 
-	 * RandomAccessFile pointing to the .mca file.
+	 * RandomAccessFile pointing to the .mca file, and an int[] storing the offset values
+	 * for each chunk's bytes within the file.
 	 */
 	
 	private static Map<RegionFile, 
-	                   RandomAccessFile> cacheRAF = new HashMap<RegionFile, 
-	                                                            RandomAccessFile>();
+	                   ChunkAccess> cacheRAF = new HashMap<RegionFile, 
+	                                                       ChunkAccess>();
+	
+	/**
+	 * TODO
+	 */
+	public static class ChunkAccess
+	{
+		//private static Field offsetField = RegionFile.class.getDeclaredField("d");
+			
+		final RandomAccessFile  bytes;
+		final int[]             offsets;
+		
+		ChunkAccess(RandomAccessFile bytes, int[] chunkOffsets)
+		{
+			this.bytes   = bytes;
+			this.offsets = chunkOffsets;
+		}
+	}
 	
 	/**
 	 * TODO
@@ -152,8 +172,7 @@ public final class RegionFileCache
 	 */
 	private static void cacheRAF(File file, RegionFile regionFile)
 	{
-		try { cacheRAF.put(regionFile, new RandomAccessFile(file, "r")); } 
-		catch (FileNotFoundException e) { e.printStackTrace(); }
+		
 	}
 	
 	
@@ -165,7 +184,7 @@ public final class RegionFileCache
 	 */
 	public static RandomAccessFile getRAF(RegionFile regionFile)
 	{
-		return cacheRAF.get(regionFile);
+		return null;//TODO
 	}
 	
 	

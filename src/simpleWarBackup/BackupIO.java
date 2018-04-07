@@ -22,7 +22,14 @@ public class BackupIO
 {
 	private static File pluginDir, backupsDir;
 	
-	protected static void initialize(JavaPlugin plugin)
+	/**
+	 * Defines two File variables: for the plugin's data folder, and for the "Backup Files" 
+	 * folder. Does not create either directory. The directories themselves are created 
+	 * as-needed, elsewhere in the plugin, during the process of saving a backup.
+	 * 
+	 * @param plugin
+	 */
+	static void initialize(JavaPlugin plugin) //called from Main onEnable()
 	{
 		pluginDir  = plugin.getDataFolder();
 		backupsDir = new File(pluginDir, "Backup Files");
@@ -30,15 +37,25 @@ public class BackupIO
 	
 	
 	/**
-	 * TODO
+	 * Returns the parent directory containing the "region" destination directory, where
+	 * the .mca files are stored. The path proceeds: backups > backup > town > world. 
+	 * This method returns the world directory.<p>
 	 * 
+	 * Note: this method does not create any of these directories. All directories are
+	 * created as-needed, elsewhere in the plugin, during the process of saving a backup.
+	 * 
+	 * @param backup TODO
+	 * @param town
 	 * @param world
-	 * @param backup
 	 * @return
 	 */
-	private static File getBackupDir(CraftWorld world, String backup)
+	private static File getDir(String backup, String town, CraftWorld world)
 	{
-		return new File(new File(backupsDir, world.getName()), backup);
+		return new File(
+		       new File(
+		       new File(backupsDir, backup          ) 
+		                          , town            )
+		                          , world.getName() );
 	}
 	
 	
@@ -51,20 +68,20 @@ public class BackupIO
 	 * @throws IOException
 	 */
 	public static void backup(
-			CraftWorld world, String backup, CraftChunk... chunks) 
+			String backup, String town, CraftWorld world, CraftChunk... chunks) 
 			throws IOException
 	{
 		final World            worldNMS  = world.getHandle();
 		      Chunk            chunkNMS;
 		      NBTTagCompound   chunkNBT;  // to be serialized
 		
-		final File             backupDir = getBackupDir(world, backup);
+		final File             worldDir = getDir(backup, town, world);
 		      int              x, z;
 		      RegionFile       regionFile;
 		      DataOutputStream chunkPipe; // serialized to this
 		
 		/* chunkPipe is a series of data outputs pointing to a ChunkBuffer. 
-		 * The internal class ChunkBuffer is defined within RegionFile, and 
+		 * ChunkBuffer is an internal class defined within RegionFile that 
 		 * extends ByteArrayOutputStream. It holds a byte[] buffer and two 
 		 * int values representing the chunk's coordinates.
 		 */
@@ -76,11 +93,11 @@ public class BackupIO
 			
 			x          = chunk.getX();
 			z          = chunk.getZ();
-			regionFile = RegionFileCache.get(backupDir, x, z);
+			regionFile = RegionFileCache.get(worldDir, x, z);
 			chunkPipe  = regionFile.b(x & 31, z & 31);
 			
-			/* below serializes chunkNBT and writes the bytes to chunkPipe, 
-			 * which then, on close(), writes those bytes into the RegionFile's 
+			/* below serializes chunkNBT, and writes those bytes to chunkPipe, 
+			 * which then, on close(), writes the bytes into this RegionFile's 
 			 * internal RandomAccessFile, which points to the actual .mca file.
 			 */
 			NBTCompressedStreamTools.a(chunkNBT, (DataOutput) chunkPipe);
@@ -94,10 +111,77 @@ public class BackupIO
 	 * 
 	 * @param world
 	 * @param backup
-	 * @param chunks
+	 * @param chunks  (chunk coords, larger half is z)
+	 * 
+	 * @throws IOException 
 	 */
-	private static void restoreWhenSafe(CraftWorld world, String backup, long[] chunks)
+	private static void restore(
+			String backup, String town, CraftWorld world, long... chunks) 
+			throws IOException
 	{
+		final File             worldDir = getDir(backup, town, world);
+		
+		      int              x, z;
+		      
+		      RegionFile       source;
+		      RegionFile       target;
+		      DataInputStream  dataInput;
+		      DataOutputStream dataOutput;
+		      
+		      int              length;
+		      byte[]           buf;
+		
+		/* dataInput is the end of a series of inputs, which proceed in 
+		 * the following order: ByteArrayInputStream > GZIPInputStream >
+		 * BufferedInputStream > DataInputStream.
+		 * 
+		 * dataOutput is a series of outputs pointing to a ChunkBuffer. 
+		 * ChunkBuffer is an internal class defined within RegionFile that 
+		 * extends ByteArrayOutputStream. It holds a byte[] buffer and two 
+		 * int values representing the chunk's coordinates.
+		 */
+		for (long chunk : chunks) 
+		{
+			x          = (int)   chunk;
+			z          = (int) ( chunk >> 32 ); 
+			
+			source     = RegionFileCache.get(worldDir, x, z);
+			target     = RegionFileCache.getFromMinecraft(world, x, z);
+			dataInput  = source.a(x & 31, z & 31);
+			dataOutput = target.b(x & 31, z & 31);
+			
+			length     = RegionFileCache.getChunkLength(source, x, z);
+			
+			/* -------------------------------------------------------------
+			 * getChunkLength(...) attempts to read from RegionFile source's 
+			 * private .mca file. It will return length 0 if there is an error,
+			 * otherwise it will return the length value recorded in the file.
+			 * 
+			 * Below are two approaches to writing bytes from the source to 
+			 * the target. The first is faster, but we need to know the exact 
+			 * length of the chunk's data to use this approach.
+			 */
+			if (length > 0)
+			{
+				buf = new byte[length];
+				dataInput.readFully(buf);
+				dataOutput.write(buf);
+			}
+			/* In the case of an error, i.e. length 0, plan B is to convert the
+			 * bytes into an NBTTagCompound, then serialize the NBTTagCompound 
+			 * back into bytes at the target location. This approach lets the 
+			 * native game handle the data as it normally would, using tools
+			 * built for the purpose, at the cost of some extra effort.
+			 */
+			else
+			{
+				NBTCompressedStreamTools.a(
+						NBTCompressedStreamTools.a(dataInput),
+						(java.io.DataOutput) dataOutput);
+			}
+			dataOutput.close(); //writes to the target file
+		}
+		
 		
 	}
 	
@@ -108,26 +192,9 @@ public class BackupIO
 	 * @param world
 	 * @param backup
 	 */
-	private static void restoreWhenSafe(CraftWorld world, String backup)
+	private static void restoreAll(CraftWorld world, String backup)
 	{
-		/*
-		File worldDir  = new File(backupsDir, world.getName());
-		File backupDir = new File(worldDir, backup);
-		File regionDir = new File(backupDir, "region");
 		
-		if (!regionDir.exists() ||
-		    !regionDir.isDirectory()) 
-			return;
-		
-		String[] regionFileNames = regionDir.list();
-		if (regionFileNames == null)
-			return;
-		
-		for (String regionFileName : regionFileNames)
-		{
-			//TODO BLAHAHAHABLHABLHBALJHBFLJDHBFKWYBFKUHEBF
-		}
-		*/
 	}
 	
 	

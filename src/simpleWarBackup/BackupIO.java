@@ -121,7 +121,7 @@ public class BackupIO
 	{
 		final File             worldDir = getDir(backup, town, world);
 		
-		      int              x, z;
+		      int              x, z, i = 0;
 		      
 		      RegionFile       source;
 		      RegionFile       target;
@@ -140,10 +140,10 @@ public class BackupIO
 		 * extends ByteArrayOutputStream. It holds a byte[] buffer and two 
 		 * int values representing the chunk's coordinates.
 		 */
-		for (long chunk : chunks) 
+		for (long chunk : chunks)
 		{
 			x          = (int)   chunk;
-			z          = (int) ( chunk >> 32 ); 
+			z          = (int) ( chunk >> 32 );
 			
 			source     = RegionFileCache.get(worldDir, x, z);
 			target     = RegionFileCache.getFromMinecraft(world, x, z);
@@ -152,37 +152,34 @@ public class BackupIO
 			
 			length     = RegionFileCache.getChunkLength(source, x, z);
 			
-			/* -------------------------------------------------------------
-			 * getChunkLength(...) attempts to read from RegionFile source's 
-			 * private .mca file. It will return length 0 if there is an error,
-			 * otherwise it will return the length value recorded in the file.
+			/* getChunkLength(...) attempts to read from RegionFile source's 
+			 * private .mca file. It will return length 0 if there is an error
+			 * or there is no chunk data. Otherwise, it will return the length 
+			 * value recorded in the file.
 			 * 
-			 * Below are two approaches to writing bytes from the source to 
-			 * the target. The first is faster, but we need to know the exact 
-			 * length of the chunk's data to use this approach.
+			 * below writes the backup chunk data into the target region file,
+			 * overwriting the current chunk data in use by the game.
 			 */
 			if (length > 0)
 			{
 				buf = new byte[length];
 				dataInput.readFully(buf);
 				dataOutput.write(buf);
-			}
-			/* In the case of an error, i.e. length 0, plan B is to convert the
-			 * bytes into an NBTTagCompound, then serialize the NBTTagCompound 
-			 * back into bytes at the target location. This approach lets the 
-			 * native game handle the data as it normally would, using tools
-			 * built for the purpose, at the cost of some extra effort.
-			 */
-			else
-			{
-				NBTCompressedStreamTools.a(
-						NBTCompressedStreamTools.a(dataInput),
-						(java.io.DataOutput) dataOutput);
+				
+				chunks[i] = 9223372034707292159L; 
+				
+				/* the value 9223372034707292159 is equivalent to the expression:
+				 * ((long) Integer.MAX_VALUE) | (((long) Integer.MAX_VALUE) << 32)
+				 * 
+				 * coordinates in long[] 'chunks' are set to this value when they
+				 * have been written successfully back into the game world. This
+				 * value is outside the range of natural chunk coordinate pairs.
+				 */
 			}
 			dataOutput.close(); //writes to the target file
+			dataInput.close();
+			i++;
 		}
-		
-		
 	}
 	
 	

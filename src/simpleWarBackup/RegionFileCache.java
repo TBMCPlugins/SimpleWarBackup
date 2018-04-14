@@ -215,7 +215,7 @@ public final class RegionFileCache
 			} 
 			catch (NoSuchFieldException | SecurityException e) 
 			{
-				/* TODO take more drastic action. Either
+				/* TODO take more drastic action? Either
 				 * Field missing would mean that Minecraft 
 				 * has refactored, breaking the whole plugin
 				 */

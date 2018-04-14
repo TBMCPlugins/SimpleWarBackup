@@ -156,9 +156,6 @@ public class BackupIO
 			 * private .mca file. It will return length 0 if there is an error
 			 * or there is no chunk data. Otherwise, it will return the length 
 			 * value recorded in the file.
-			 * 
-			 * below writes the backup chunk data into the target region file,
-			 * overwriting the current chunk data in use by the game.
 			 */
 			if (length > 0)
 			{

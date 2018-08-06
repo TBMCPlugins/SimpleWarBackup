@@ -18,13 +18,48 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class Main extends JavaPlugin implements Listener
 {
+	// --------------------- STATIC ---------------------
+	
+	static File pluginDir;
+	static File backupsDir;
+	
+	/**
+	 * Defines two File variables: for the plugin's data folder, and for the "Backup Files" 
+	 * folder. Does not create either directory. The directories themselves are created 
+	 * as-needed, elsewhere in the plugin, during the process of saving a backup.
+	 * 
+	 * @param plugin
+	 */
+	static void initialize(JavaPlugin plugin)
+	{
+		pluginDir  = plugin.getDataFolder();
+		backupsDir = new File(pluginDir, "Backup Files");
+	}
+	
+	
+	// -------------------- INSTANCE --------------------
+	
+	
 	public void onEnable()
 	{
+		initialize(this);
+		
+		//TEST
 		getCommand("testBackupChunk").setExecutor(this);
 		getCommand("testRestoreChunk").setExecutor(this);
-		
-		BackupIO.initialize(this);
 	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args)
 	{

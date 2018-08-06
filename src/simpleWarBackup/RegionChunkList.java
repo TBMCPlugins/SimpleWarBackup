@@ -4,53 +4,90 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.BitSet;
-import java.util.HashMap;
 
+/**
+ * TODO write javadoc
+ */
 public class RegionChunkList 
 {
-	private final File file;
+	/**
+	 * TODO write javadoc
+	 */
 	private final RandomAccessFile readwrite;
-	private final BitSet chunks = new BitSet(1024);
 	
-	private final HashMap<String, HashMap
-	                     <String, HashMap
-	                     <String, RegionChunkList>>> lists = 
-	                     
-	              new HashMap<String, HashMap
-	                         <String, HashMap
-	                         <String, RegionChunkList>>>();
+	/**
+	 * TODO write javadoc
+	 */
+	final BitSet chunks = new BitSet(1024);
+	
+	/**
+	 * TODO write javadoc
+	 */
+	final long regionCoordinates;
+	
 	
 	
 	/**
-	 * TODO
+	 * TODO write javadoc
 	 * 
 	 * @param file
 	 * @throws IOException
 	 */
-	RegionChunkList(File file, String backup, String town, String world) throws IOException
+	RegionChunkList(File file) throws IOException
 	{
-		readwrite = new RandomAccessFile((this.file = file), "rw");
+		readwrite = new RandomAccessFile(file, "rw");
 		
-		byte[] bytes = new byte[128];
-		if (readwrite.length() >= 128) 
-		{
+		// Write chunk list to BitSet:
+		{	
+			byte[] bytes = new byte[128];
 			readwrite.readFully(bytes);
-			
+				
+			/* Each bit represents one of the region's 1024 chunks (32x32). Chunks are 
+			 * listed in ascending x,z order: (0,0),(1,0)...(31,0),(0,1),(1,1)......(31,31).
+			 * 
+			 * Bits in each byte are read from smallest to largest position: 1,2,4...128.
+			 * The values are written to a BitSet, which represents the region in runtime.
+			 * 
+			 * 1 = true, 0 = false.
+			 */
 			int i = 0, j, k;
 			for (byte b : bytes)
 				for (j = 0, k = 1; j < 8; i++, j++, k <<= 1)
 					if ((b & k) == k) chunks.set(i);
 		}
-		else readwrite.write(bytes);
 		
-		lists.get(backup)
-		     .get(town)
-		     .put(world, this);
+		// Get region coordinate from filename:
+		{
+			String[] name = file.getName().split(".");
+			int x = Integer.parseInt(name[1]);
+			int z = Integer.parseInt(name[2]);
+			
+			regionCoordinates = (long) x | ((long) z << 32);
+		}
 	}
 	
 	
 	/**
-	 * TODO
+	 * TODO write javadoc
+	 * 
+	 * @param directory
+	 * @param regionCoordinates
+	 */
+	RegionChunkList(File directory, long regionCoordinates) throws IOException
+	{
+		this.regionCoordinates = regionCoordinates;
+		
+		int x = (int)  regionCoordinates;
+		int z = (int) (regionCoordinates >>> 32);
+		String filename = "r." + x + "." + z + ".chunklist";
+		
+		File file = new File(directory, filename);
+		readwrite = new RandomAccessFile(file, "rw");
+	}
+	
+	
+	/**
+	 * TODO write javadoc (and add comment to explain numbers)
 	 * 
 	 * @param x
 	 * @param z
@@ -65,7 +102,7 @@ public class RegionChunkList
 	
 	
 	/**
-	 * TODO
+	 * TODO write javadoc (and add comment to explain numbers)
 	 * 
 	 * @param x
 	 * @param z
@@ -79,7 +116,7 @@ public class RegionChunkList
 	
 	
 	/**
-	 * TODO
+	 * TODO write javadoc (and add comment to explain numbers)
 	 * 
 	 * @param x
 	 * @param z
@@ -89,5 +126,48 @@ public class RegionChunkList
 		x &= 31;
 		z &= 31;
 		chunks.clear(x + z * 32);
+	}
+	
+	
+	/**
+	 * TODO write javadoc
+	 * 
+	 * @throws IOException 
+	 */
+	void saveToFile() throws IOException
+	{
+		int i = 0;
+		byte bytes[] = new byte[128];
+		for (byte b : bytes)
+		{
+			if (chunks.get(i++)) b = (byte) (b | (byte) 1  );
+			if (chunks.get(i++)) b = (byte) (b | (byte) 2  );
+			if (chunks.get(i++)) b = (byte) (b | (byte) 4  );
+			if (chunks.get(i++)) b = (byte) (b | (byte) 8  );
+			if (chunks.get(i++)) b = (byte) (b | (byte) 16 );
+			if (chunks.get(i++)) b = (byte) (b | (byte) 32 );
+			if (chunks.get(i++)) b = (byte) (b | (byte) 64 );
+			if (chunks.get(i++)) b = (byte) (b | (byte) 128);
+		}
+		readwrite.seek(0);
+		readwrite.write(bytes);
+	}
+	
+	
+	/**
+	 * Closes the RandomAccessFile associated with this RegionChunkList.<p>
+	 * 
+	 * When you are done with this RegionChunkList, you should invoke this method. 
+	 */
+	void close()
+	{
+		try 
+		{
+			readwrite.close();
+		} 
+		catch (IOException e) 
+		{
+			e.printStackTrace();
+		}
 	}
 }

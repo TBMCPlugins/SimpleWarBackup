@@ -11,27 +11,19 @@ import java.util.Map;
 import net.minecraft.server.v1_12_R1.RegionFile;
 
 /**
- * ---------------------------------------------------------------
- * ---------------------------------------------------------------
- * ---------------------------------------------------------------
- * ---------------------------------------------------------------
- * CURRENTLY A DUPLICATE OF THE SECONDARY CACHE IN RegionFileCache
- * ---------------------------------------------------------------
- * ---------------------------------------------------------------
- * ---------------------------------------------------------------
- * ---------------------------------------------------------------
+ * TODO write javadoc
  */
-public class ChunkAccessCache 
+public class ChunkAccess_Cache 
 {
-	private static Map<RegionFile, Access> cache = new HashMap<RegionFile,  Access>();
+	static Map<RegionFile, Access> cache = new HashMap<RegionFile,  Access>();
 	
 	/**
-	 * TODO
+	 * TODO write javadoc
 	 * 
 	 * @param file
 	 * @param regionFile
 	 */
-	static void cacheChunkAccess(File file, RegionFile regionFile)
+	static void createAndPut(File file, RegionFile regionFile)
 	{
 		try
 		{
@@ -59,20 +51,19 @@ public class ChunkAccessCache
 		Access access = cache.get(regionFile);
 		
 		/* "offset" refers to the location of the chunk's bytes
-		 * within the .mca file - or how many bytes into the file
-		 * to seek when reading - divided by 4096.
+		 * within the .mca file (i.e. how many bytes into the file
+		 * to seek when reading) divided by 4096.
 		 */
 		int offset;
 		
-		/* The first four bytes at that location, the first four
-		 * bytes of the chunk's data, are an int recording the
-		 * chunk's length in bytes, not including those four.
+		/* The first four bytes at that location encode an int. This
+		 * int is the chunk's remaining length in bytes, excluding the
+		 * four bytes of the int.
 		 * 
-		 * The next byte represents compression scheme. This byte,
-		 * like the four previous bytes, is omitted when the game 
-		 * reads a chunk's data. 
+		 * The fifth byte represents compression scheme. The first five 
+		 * bytes are omitted when the game reads a chunk's data. 
 		 * 
-		 * This method returns the length of data actually read.
+		 * The following method returns the length of data actually read.
 		 */
 		if (access != null && (offset = access.offset[x + z * 32]) > 0)
 		{
@@ -88,16 +79,15 @@ public class ChunkAccessCache
 	
 	
 	/**
-	 * Gives access to the private fields {@code int[] d}, and {@code RandomAccessFile c}, 
+	 * Provides access to the private fields {@code int[] d}, and {@code RandomAccessFile c}, 
 	 * within a RegionFile object. The names of these fields may change in new releases of
 	 * Spigot. TODO explain what both of those fields are
 	 */
 	private static class Access
 	{
-		static final Field            offsetField;
-		       final int[]            offset;
-		       
-		static final Field            bytesField;
+		static final      Field       offsetField;
+		static final      Field       bytesField;
+		       final      int[]       offset;
 		       final RandomAccessFile bytes;
 		
 		static
@@ -106,18 +96,13 @@ public class ChunkAccessCache
 			Field tmp2 = null;
 			try 
 			{
-				tmp1 = RegionFile.class.getDeclaredField("d"); 
-				tmp1.setAccessible(true);
-				
+				tmp1 = RegionFile.class.getDeclaredField("d");
 				tmp2 = RegionFile.class.getDeclaredField("c");
+				tmp1.setAccessible(true);
 				tmp2.setAccessible(true);
 			} 
 			catch (NoSuchFieldException | SecurityException e) 
 			{
-				/* TODO take more drastic action? Either
-				 * Field missing would mean that Minecraft 
-				 * has refactored, breaking the whole plugin
-				 */
 				e.printStackTrace();
 			}
 			offsetField = tmp1;
@@ -140,7 +125,7 @@ public class ChunkAccessCache
 		                                     IllegalAccessException,
 		                                     IllegalArgumentException
 		{
-			offset = (int[])            offsetField.get(regionFile);
+			offset =      (int[])       offsetField.get(regionFile);
 			bytes  = (RandomAccessFile) bytesField .get(regionFile);
 		}
 	}

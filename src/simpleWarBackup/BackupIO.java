@@ -20,22 +20,6 @@ import net.minecraft.server.v1_12_R1.World;
 
 public class BackupIO 
 {
-	private static File pluginDir, backupsDir;
-	
-	/**
-	 * Defines two File variables: for the plugin's data folder, and for the "Backup Files" 
-	 * folder. Does not create either directory. The directories themselves are created 
-	 * as-needed, elsewhere in the plugin, during the process of saving a backup.
-	 * 
-	 * @param plugin
-	 */
-	static void initialize(JavaPlugin plugin) //called from Main onEnable()
-	{
-		pluginDir  = plugin.getDataFolder();
-		backupsDir = new File(pluginDir, "Backup Files");
-	}
-	
-	
 	/**
 	 * Returns the parent directory containing the "region" destination directory, where
 	 * the .mca files are stored. The path proceeds: backups > backup > town > world. 
@@ -49,13 +33,9 @@ public class BackupIO
 	 * @param world
 	 * @return
 	 */
-	private static File getDir(String backup, String town, CraftWorld world)
+	private static File getDir(String backup, String town, String worldUID)
 	{
-		return new File(
-		       new File(
-		       new File(backupsDir, backup          ) 
-		                          , town            )
-		                          , world.getName() );
+		return new File(new File (new File(Main.backupsDir, backup), town), worldUID);
 	}
 	
 	
@@ -67,41 +47,31 @@ public class BackupIO
 	 * @param chunks
 	 * @throws IOException
 	 */
-	public static void backup(
-			String backup, String town, CraftWorld world, CraftChunk... chunks) 
+	public static void backup(File worldDir, World world, Chunk... chunks) 
 			throws IOException
 	{
-		final World            worldNMS  = world.getHandle();
-		      Chunk            chunkNMS;
-		      NBTTagCompound   chunkNBT;  // to be serialized
+		NBTTagCompound   chunkNBT;   // to be serialized
+		DataOutputStream dataOutput; // serialized to here
 		
-		final File             worldDir = getDir(backup, town, world);
-		      int              x, z;
-		      RegionFile       regionFile;
-		      DataOutputStream chunkPipe; // serialized to this
-		
-		/* chunkPipe is a series of data outputs pointing to a ChunkBuffer. 
-		 * ChunkBuffer is an internal class defined within RegionFile that 
-		 * extends ByteArrayOutputStream. It holds a byte[] buffer and two 
-		 * int values representing the chunk's coordinates.
+		/* dataOutput is the first of a series of outputs, which proceed in
+		 * the following order: DataOutputStream > BufferedOutputStream >
+		 * DeflaterOutputStream > RegionFile.ChunkBuffer
+		 *  
+		 * ChunkBuffer extends ByteArrayOutputStream. It holds a byte[] buffer,
+		 * and two int values which represent the chunk's coordinates.
 		 */
 		      
-		for (CraftChunk chunk : chunks)
+		for (Chunk chunk : chunks)
 		{
-			chunkNMS   = chunk.getHandle();
-			chunkNBT   = ChunkNBTTools.save(chunkNMS, worldNMS);
+			chunkNBT  = ChunkNBTTools.save(chunk, world);
+			dataOutput = RegionFile_Cache.get(worldDir, chunk.locX, chunk.locZ)
+			                             .b(chunk.locX & 31, chunk.locZ & 31);
 			
-			x          = chunk.getX();
-			z          = chunk.getZ();
-			regionFile = RegionFileCache.get(worldDir, x, z);
-			chunkPipe  = regionFile.b(x & 31, z & 31);
-			
-			/* below serializes chunkNBT, and writes those bytes to chunkPipe, 
-			 * which then, on close(), writes the bytes into this RegionFile's 
-			 * internal RandomAccessFile, which points to the actual .mca file.
+			/* a(...) serializes the chunk, and writes the bytes to chunkPipe.
+			 * dataOutput.close() writes the bytes to the actual .mca file.
 			 */
-			NBTCompressedStreamTools.a(chunkNBT, (DataOutput) chunkPipe);
-			chunkPipe.close();
+			NBTCompressedStreamTools.a(chunkNBT, (DataOutput) dataOutput);
+			dataOutput.close();
 		}
 	}
 	
@@ -115,45 +85,43 @@ public class BackupIO
 	 * 
 	 * @throws IOException 
 	 */
-	private static void restore(
-			String backup, String town, CraftWorld world, long... chunks) 
+	private static void restore(File worldDir, World world, long[] chunks) 
 			throws IOException
 	{
-		final File             worldDir = getDir(backup, town, world);
-		
-		      int              x, z, i = 0;
-		      
-		      RegionFile       source;
-		      RegionFile       target;
-		      DataInputStream  dataInput;
-		      DataOutputStream dataOutput;
-		      
-		      int              length;
-		      byte[]           buf;
+	      int              x, z, i = 0;
+	      
+	      RegionFile       source;
+	      RegionFile       target;
+	      DataInputStream  dataInput;
+	      DataOutputStream dataOutput;
+	      
+	      int              length;
+	      byte[]           buf;
 		
 		/* dataInput is the end of a series of inputs, which proceed in 
 		 * the following order: ByteArrayInputStream > GZIPInputStream >
 		 * BufferedInputStream > DataInputStream.
 		 * 
-		 * dataOutput is a series of outputs pointing to a ChunkBuffer. 
-		 * ChunkBuffer is an internal class defined within RegionFile that 
-		 * extends ByteArrayOutputStream. It holds a byte[] buffer and two 
-		 * int values representing the chunk's coordinates.
+		 * dataOutput is the first of a series of outputs, which proceed in
+		 * the following order: DataOutputStream > BufferedOutputStream >
+		 * DeflaterOutputStream > RegionFile.ChunkBuffer
+		 *  
+		 * ChunkBuffer extends ByteArrayOutputStream. It holds a byte[] buffer,
+		 * and two int values which represent the chunk's coordinates.
 		 */
 		for (long chunk : chunks)
 		{
 			x          = (int)   chunk;
 			z          = (int) ( chunk >> 32 );
 			
-			source     = RegionFileCache.get(worldDir, x, z);
-			target     = RegionFileCache.getFromMinecraft(world, x, z);
+			source     = RegionFile_Cache.get(worldDir, x, z);
+			target     = RegionFile_Cache.getFromMinecraft(world, x, z);
 			dataInput  = source.a(x & 31, z & 31);
 			dataOutput = target.b(x & 31, z & 31);
 			
-			length     = RegionFileCache.getChunkLength(source, x, z);
+			length     = ChunkAccess_Cache.getChunkLength(source, x, z);
 			
-			/* getChunkLength(...) attempts to read from RegionFile source's 
-			 * private .mca file. It will return length 0 if there is an error
+			/* getChunkLength(...) will return length 0 if there is an error
 			 * or there is no chunk data. Otherwise, it will return the length 
 			 * value recorded in the file.
 			 */
@@ -169,11 +137,11 @@ public class BackupIO
 				 * ((long) Integer.MAX_VALUE) | (((long) Integer.MAX_VALUE) << 32)
 				 * 
 				 * coordinates in long[] 'chunks' are set to this value when they
-				 * have been written successfully back into the game world. This
-				 * value is outside the range of natural chunk coordinate pairs.
+				 * have been written successfully back into the game world, because 
+				 * this value is outside the range of natural chunk coordinate pairs.
 				 */
 			}
-			dataOutput.close(); //writes to the target file
+			dataOutput.close(); //writes to target's .mca file
 			dataInput.close();
 			i++;
 		}
@@ -193,17 +161,25 @@ public class BackupIO
 	
 	
 	
+	
+	
+	
+	
+	
+	
+	
+	
 	public static boolean restoreTest(int x, int z) throws IOException
 	{
 		CraftWorld world = (CraftWorld) Bukkit.getWorld("world");
 		
-		File worldDir  = new File(backupsDir, "world");
+		File worldDir  = new File(Main.backupsDir, "world");
 		File backupDir = new File(worldDir, "test");
 		File regionDir = new File(backupDir, "region");
 		File mcaFile   = new File(regionDir, "r.1.1.mca");
 		
-		RegionFile regionFileSource = RegionFileCache.get(backupDir, x, z);
-		RegionFile regionFileTarget = RegionFileCache.getFromMinecraft(world, x, z);
+		RegionFile regionFileSource = RegionFile_Cache.get(backupDir, x, z);
+		RegionFile regionFileTarget = RegionFile_Cache.getFromMinecraft(world, x, z);
 		
 		DataInputStream  dataInput  = regionFileSource.a(x & 31, z & 31);
 		DataOutputStream dataOutput = regionFileTarget.b(x & 31, z & 31);

@@ -11,7 +11,7 @@ import java.util.Map;
 import net.minecraft.server.v1_12_R1.RegionFile;
 
 /**
- * TODO write javadoc
+ * TODO write javadoc (mention that everything in this class is package private)
  */
 public class ChunkAccess_Cache 
 {
@@ -46,7 +46,7 @@ public class ChunkAccess_Cache
 	 * @param z
 	 * @return
 	 */
-	public static int getChunkLength(RegionFile regionFile, int x, int z)
+	static int getChunkLength(RegionFile regionFile, int x, int z)
 	{
 		Access access = cache.get(regionFile);
 		

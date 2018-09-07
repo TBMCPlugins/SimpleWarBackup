@@ -20,7 +20,14 @@ public class Main extends JavaPlugin implements Listener
 {
 	// --------------------- STATIC ---------------------
 	
+	/**
+	 * TODO write javadoc
+	 */
 	static File pluginDir;
+	
+	/**
+	 * TODO write javadoc
+	 */
 	static File backupsDir;
 	
 	/**

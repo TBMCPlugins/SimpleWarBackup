@@ -12,7 +12,7 @@ import net.minecraft.server.v1_12_R1.RegionFile;
 import net.minecraft.server.v1_12_R1.World;
 
 /**
- * TODO write this
+ * TODO write javadoc
  */
 public final class RegionFile_Cache 
 {
@@ -79,7 +79,7 @@ public final class RegionFile_Cache
 		
 		/* regionFile.c() closes the private RandomAccessFile 
 		 * inside the regionFile object, and that's all it does.
-		 * The entire method: if (file != null) file.close().
+		 * The entire method: if (file != null) file.close();
 		 */
 		while (iterator.hasNext()) 
 		{
@@ -93,7 +93,7 @@ public final class RegionFile_Cache
 	
 	
 	/**
-	 * TODO
+	 * TODO write javadoc, explain what method a(...) does
 	 * 
 	 * @param world
 	 * @param x
@@ -102,7 +102,7 @@ public final class RegionFile_Cache
 	 */
 	public static RegionFile getFromMinecraft(CraftWorld world, int x, int z)
 	{
-		/* root directory of the world, the directory
+		/* root directory of the world: the directory
 		 * sharing the world's name and holding its 
 		 * data. 'region' folder is found in here.
 		 */
@@ -112,7 +112,7 @@ public final class RegionFile_Cache
 	}
 	
 	/**
-	 * TODO
+	 * TODO write javadoc, explain what method a(...) does
 	 * 
 	 * @param world
 	 * @param x
@@ -121,7 +121,7 @@ public final class RegionFile_Cache
 	 */
 	public static RegionFile getFromMinecraft(World world, int x, int z)
 	{
-		/* root directory of the world, the directory
+		/* root directory of the world: the directory
 		 * sharing the world's name and holding its 
 		 * data. 'region' folder is found in here.
 		 */

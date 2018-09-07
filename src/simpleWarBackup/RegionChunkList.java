@@ -81,8 +81,7 @@ public class RegionChunkList
 		int z = (int) (regionCoordinates >>> 32);
 		String filename = "r." + x + "." + z + ".chunklist";
 		
-		File file = new File(directory, filename);
-		readwrite = new RandomAccessFile(file, "rw");
+		readwrite = new RandomAccessFile(new File(directory, filename), "rw");
 	}
 	
 	
@@ -157,17 +156,12 @@ public class RegionChunkList
 	/**
 	 * Closes the RandomAccessFile associated with this RegionChunkList.<p>
 	 * 
-	 * When you are done with this RegionChunkList, you should invoke this method. 
+	 * When you are done with a RegionChunkList, you should invoke this method.
+	 * 
+	 * @throws IOException if the RandomAccessFile was not closed
 	 */
-	void close()
+	void close() throws IOException
 	{
-		try 
-		{
-			readwrite.close();
-		} 
-		catch (IOException e) 
-		{
-			e.printStackTrace();
-		}
+		readwrite.close();
 	}
 }

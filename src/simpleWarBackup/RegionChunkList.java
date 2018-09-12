@@ -103,8 +103,8 @@ public class RegionChunkList
 	/**
 	 * TODO write javadoc (and add comment to explain numbers)
 	 * 
-	 * @param x
-	 * @param z
+	 * @param x  chunk x coordinate
+	 * @param z  chunk z coordinate
 	 */
 	void storeChunk(int x, int z)
 	{

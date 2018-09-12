@@ -33,9 +33,9 @@ public class BackupIO
 	 * @param world
 	 * @return
 	 */
-	private static File getDir(String backup, String town, String worldUID)
+	private static File getDir(String backup, String town, String world)
 	{
-		return new File(new File (new File(Main.backupsDir, backup), town), worldUID);
+		return new File(new File (new File(Main.backupsDir, backup), town), world);
 	}
 	
 	

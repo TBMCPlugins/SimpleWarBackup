@@ -1,6 +1,7 @@
 package simpleWarBackup;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -14,6 +15,7 @@ import com.palmergames.bukkit.towny.object.Town;
 import com.palmergames.bukkit.towny.object.TownBlock;
 import com.palmergames.bukkit.towny.object.TownyUniverse;
 
+import simpleWarBackup.RegionChunkList.Coord;
 import simpleWarBackup.exceptions.NameCollisionException;
 
 /**
@@ -25,13 +27,14 @@ public class Backup
 	 * TODO write javadoc
 	 */
 	private final HashMap<Integer, //town
-	                  HashMap<UUID, //world
-	                      HashMap<Long, //region
-	                          RegionChunkList>>> tree 
+	               HashMap<String, //world
+	                HashMap<Coord, //region
+	                 RegionChunkList>>> tree 
+	               
 	        = new HashMap<Integer,
-	                  HashMap<UUID,
-	                      HashMap<Long,
-	                          RegionChunkList>>>();
+	               HashMap<String,
+	                HashMap<Coord,
+	                 RegionChunkList>>>();
 	
 	/**
 	 * TODO write javadoc
@@ -49,10 +52,11 @@ public class Backup
 	{
 		checkName(this.name = name); //throws NameCollisionException
 		
+		File        folder = new File(plugin.getDataFolder(), name);
 		Server      server = plugin.getServer();
 		List<World> worlds = server.getWorlds();
 		
-		maketree(TownyUniverse.getDataSource().getTowns(), worlds, server);
+		maketree(TownyUniverse.getDataSource().getTowns(), worlds, server, folder);
 	}
 	
 	
@@ -71,66 +75,93 @@ public class Backup
 	}
 	
 	
-	
-	private void maketree(List<Town> towns, List<World> worlds, Server server)
+	/**
+	 * TODO write javadoc
+	 * 
+	 * @param towns
+	 * @param worlds
+	 * @param server
+	 * @param folder
+	 * @throws IOException 
+	 */
+	private void maketree(List<Town> towns, List<World> worlds, Server server, File folder) throws IOException
 	{
-		HashMap<UUID, HashMap<Long, RegionChunkList>> townbranch;
-		              HashMap<Long, RegionChunkList>  worldbranch;
+		 
 		
+		HashMap<String,  HashMap<Coord, RegionChunkList>> townbranch;
+		                 HashMap<Coord, RegionChunkList>  worldbranch;
+		
+		RegionChunkList  chunklist;
+		Coord            coord;
+		int              x,z;
+		
+		String           worldname;
+		
+		File             townDir, 
+		                 worldDir, 
+		                 chunksDir,
+		                 chlistDir;
+		
+		/*
+		 * 
+		 */
 		for (Town town : towns)
 		{
-			townbranch = new HashMap<UUID, HashMap<Long, RegionChunkList>>();
-			splitbranch(townbranch, worlds);
-			addleaves(townbranch, town, worlds, server);
+			townbranch = new HashMap<String, HashMap<Coord, RegionChunkList>>();
+			
+			//make world sub-branches
+			for (World world : worlds)
+				townbranch.put(world.getName(), 
+				               new HashMap<Coord, RegionChunkList>());
+			
+			//populate world sub-branches
+			for (TownBlock block : town.getTownBlocks())
+			{
+				worldname = block.getWorld().getName();
+				worldbranch = townbranch.get(worldname);
+				
+				x = block.getX() >> 4;
+				z = block.getZ() >> 4;
+				
+				coord = new Coord(x >> 5, z >> 5);
+				chunklist = worldbranch.get(coord);
+				
+				if (chunklist == null)
+				{
+					townDir   = new File(folder, town.getUID().toString());
+					worldDir  = new File(townDir, worldname);
+					chunksDir = new File(worldDir, "region chunk lists");
+					chlistDir = new File(chunksDir, "r."+coord.x+"."+coord.z+".chunklist");
+					
+					chunklist = new RegionChunkList(chlistDir);
+					worldbranch.put(coord, chunklist);
+				}
+			}
+			
 			tree.put(town.getUID(), townbranch);
 		}
 	}
 	
 	
+
 	/**
-	 * TODO write javadoc
+	 * Holds region coordinates. A region is 32x32 chunks. A chunk is 16x16 blocks.<p>
 	 * 
-	 * @param townbranch
-	 * @param worlds
+	 * The chunk coordinates of a block are (block x >> 4, block z >> 4).<p> 
+	 * The region coordinates of a chunk are (chunk x >> 5, chunk z >> 5).<p>
 	 */
-	private static void splitbranch(
-			HashMap<UUID, HashMap<Long, RegionChunkList>> townbranch,
-			List<World> worlds)
+	public static class Coord
 	{
-		for (World world : worlds)
+		final int x, z;
+		
+		/**
+		 * @param x  region x coordinate
+		 * @param z  region z coordinate
+		 */
+		public Coord(int x, int z)
 		{
-			townbranch.put(world.getUID(), new HashMap<Long, RegionChunkList>());
-		}
-	}
-	
-	
-	/**
-	 * TODO write javadoc
-	 * 
-	 * @param townbranch
-	 * @param town
-	 * @param worlds
-	 * @param server
-	 */
-	private static void addleaves(
-			HashMap<UUID, HashMap<Long, RegionChunkList>> townbranch,
-			Town town, List<World> worlds, Server server)
-	{
-		long region;
-		RegionChunkList chunklist;
-		HashMap<Long, RegionChunkList> worldbranch;
-		for (TownBlock block : town.getTownBlocks())
-		{
-			worldbranch = townbranch.get(server.getWorld(block.getWorld().getName()).getUID());
-			
-			int x = block.getX();
-			int z = block.getZ();
-			
-			//round down to the nearest multiple of 16
-			if (x < 0) x -= 16 + (x % 16); else x -= x % 16;
-			if (z < 0) z -= 16 + (z % 16); else z -= z % 16;
-			
-			//TODO finish this fucking method, and this fucking plugin
+			this.x = x;
+			this.z = z;
 		}
 	}
 }

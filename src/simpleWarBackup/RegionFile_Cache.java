@@ -20,7 +20,7 @@ public final class RegionFile_Cache
 	private static final Map<File, RegionFile> cache = new HashMap<File, RegionFile>();
 	
 	/**
-	 * Returns name of the region file that would contain the given chunk coordinates. 
+	 * Returns name of the region file that contains the given chunk coordinates. 
 	 * Name follows the standard minecraft format: "r.[region x].[region z].mca".
 	 * Region coordinate = chunk coordinate >> 5.
 	 * 

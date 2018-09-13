@@ -15,7 +15,6 @@ import com.palmergames.bukkit.towny.object.Town;
 import com.palmergames.bukkit.towny.object.TownBlock;
 import com.palmergames.bukkit.towny.object.TownyUniverse;
 
-import simpleWarBackup.RegionChunkList.Coord;
 import simpleWarBackup.exceptions.NameCollisionException;
 
 /**
@@ -46,17 +45,41 @@ public class Backup
 	 * TODO write javadoc (this is the default constructor)
 	 * 
 	 * @param name 
+	 * @throws IOException
 	 * @throws NameCollisionException
 	 */
-	Backup(String name, Main plugin) throws NameCollisionException
+	Backup(String name, Main plugin) throws IOException, NameCollisionException
 	{
 		checkName(this.name = name); //throws NameCollisionException
 		
-		File        folder = new File(plugin.getDataFolder(), name);
+		directory = new File(plugin.getDataFolder(), name);
+		
 		Server      server = plugin.getServer();
 		List<World> worlds = server.getWorlds();
 		
-		maketree(TownyUniverse.getDataSource().getTowns(), worlds, server, folder);
+		maketree(TownyUniverse.getDataSource().getTowns(), worlds, server);
+	}
+	
+	
+	/**
+	 * TODO write javadoc
+	 * 
+	 * @param name
+	 * @param plugin
+	 * @throws IOException
+	 * @throws NameCollisionException
+	 */
+	Backup(String name, Main plugin, String... townlist) 
+			throws IOException, NameCollisionException
+	{
+		checkName(this.name = name); //throws NameCollisionException
+		
+		directory = new File(plugin.getDataFolder(), name);
+		
+		Server      server = plugin.getServer();
+		List<World> worlds = server.getWorlds();
+		
+		maketree(TownyUniverse.getDataSource().getTowns(townlist), worlds, server);
 	}
 	
 	
@@ -68,7 +91,7 @@ public class Backup
 	 */
 	private static void checkName(String name) throws NameCollisionException
 	{
-		for (String filename : Main.backupsDir.list()) if (filename == name)
+		for (String filename : Main.backupsDir.list()) if (filename.equals(name))
 		{
 			throw new NameCollisionException();
 		}
@@ -84,7 +107,7 @@ public class Backup
 	 * @param folder
 	 * @throws IOException 
 	 */
-	private void maketree(List<Town> towns, List<World> worlds, Server server, File folder) throws IOException
+	private void maketree(List<Town> towns, List<World> worlds, Server server) throws IOException
 	{
 		HashMap<String,  HashMap<Coord, RegionChunkList>> townbranch;
 		                 HashMap<Coord, RegionChunkList>  worldbranch;
@@ -95,8 +118,6 @@ public class Backup
 		
 		String           worldname;
 		
-		/* TODO
-		 */
 		for (Town town : towns)
 		{
 			townbranch = new HashMap<String, HashMap<Coord, RegionChunkList>>();
@@ -119,10 +140,10 @@ public class Backup
 				coord = new Coord(x >> 5, z >> 5);
 				chunklist = worldbranch.get(coord);
 				
-				//create if nonexistent
+				//create chunk list if nonexistent
 				if (chunklist == null)
 				{
-					File townDir   = new File(folder, town.getUID().toString());
+					File townDir   = new File(directory, town.getUID().toString());
 					File worldDir  = new File(townDir, worldname);
 					File chunksDir = new File(worldDir, "region chunk lists");
 					File chlistDir = new File(chunksDir, "r."+coord.x+"."+coord.z+".chunklist");

@@ -86,8 +86,6 @@ public class Backup
 	 */
 	private void maketree(List<Town> towns, List<World> worlds, Server server, File folder) throws IOException
 	{
-		 
-		
 		HashMap<String,  HashMap<Coord, RegionChunkList>> townbranch;
 		                 HashMap<Coord, RegionChunkList>  worldbranch;
 		
@@ -97,13 +95,7 @@ public class Backup
 		
 		String           worldname;
 		
-		File             townDir, 
-		                 worldDir, 
-		                 chunksDir,
-		                 chlistDir;
-		
-		/*
-		 * 
+		/* TODO
 		 */
 		for (Town town : towns)
 		{
@@ -120,22 +112,27 @@ public class Backup
 				worldname = block.getWorld().getName();
 				worldbranch = townbranch.get(worldname);
 				
+				//convert block to chunk
 				x = block.getX() >> 4;
 				z = block.getZ() >> 4;
 				
 				coord = new Coord(x >> 5, z >> 5);
 				chunklist = worldbranch.get(coord);
 				
+				//create if nonexistent
 				if (chunklist == null)
 				{
-					townDir   = new File(folder, town.getUID().toString());
-					worldDir  = new File(townDir, worldname);
-					chunksDir = new File(worldDir, "region chunk lists");
-					chlistDir = new File(chunksDir, "r."+coord.x+"."+coord.z+".chunklist");
+					File townDir   = new File(folder, town.getUID().toString());
+					File worldDir  = new File(townDir, worldname);
+					File chunksDir = new File(worldDir, "region chunk lists");
+					File chlistDir = new File(chunksDir, "r."+coord.x+"."+coord.z+".chunklist");
 					
 					chunklist = new RegionChunkList(chlistDir);
 					worldbranch.put(coord, chunklist);
 				}
+				
+				//add chunk to chunk list
+				chunklist.storeChunk(x, z);
 			}
 			
 			tree.put(town.getUID(), townbranch);
@@ -148,6 +145,7 @@ public class Backup
 	 * Holds region coordinates. A region is 32x32 chunks. A chunk is 16x16 blocks.<p>
 	 * 
 	 * The chunk coordinates of a block are (block x >> 4, block z >> 4).<p> 
+	 * 
 	 * The region coordinates of a chunk are (chunk x >> 5, chunk z >> 5).<p>
 	 */
 	public static class Coord

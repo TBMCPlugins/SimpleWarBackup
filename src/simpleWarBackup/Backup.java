@@ -38,7 +38,7 @@ public class Backup
 	/**
 	 * TODO write javadoc
 	 */
-	private final File directory;
+	private final File folder;
 	private final String name;
 		
 	/**
@@ -52,7 +52,7 @@ public class Backup
 	{
 		checkName(this.name = name); //throws NameCollisionException
 		
-		directory = new File(plugin.getDataFolder(), name);
+		folder = new File(plugin.getDataFolder(), name);
 		
 		Server      server = plugin.getServer();
 		List<World> worlds = server.getWorlds();
@@ -74,27 +74,12 @@ public class Backup
 	{
 		checkName(this.name = name); //throws NameCollisionException
 		
-		directory = new File(plugin.getDataFolder(), name);
+		folder = new File(plugin.getDataFolder(), name);
 		
 		Server      server = plugin.getServer();
 		List<World> worlds = server.getWorlds();
 		
 		maketree(TownyUniverse.getDataSource().getTowns(townlist), worlds, server);
-	}
-	
-	
-	/**
-	 * TODO write javadoc
-	 * 
-	 * @param name
-	 * @throws NameCollisionException
-	 */
-	private static void checkName(String name) throws NameCollisionException
-	{
-		for (String filename : Main.backupsDir.list()) if (filename.equals(name))
-		{
-			throw new NameCollisionException();
-		}
 	}
 	
 	
@@ -143,7 +128,7 @@ public class Backup
 				//create chunk list if nonexistent
 				if (chunklist == null)
 				{
-					File townDir   = new File(directory, town.getUID().toString());
+					File townDir   = new File(folder, town.getUID().toString());
 					File worldDir  = new File(townDir, worldname);
 					File chunksDir = new File(worldDir, "region chunk lists");
 					File chlistDir = new File(chunksDir, "r."+coord.x+"."+coord.z+".chunklist");
@@ -152,7 +137,7 @@ public class Backup
 					worldbranch.put(coord, chunklist);
 				}
 				
-				//add chunk to chunk list
+				
 				chunklist.storeChunk(x, z);
 			}
 			
@@ -160,6 +145,21 @@ public class Backup
 		}
 	}
 	
+	
+	
+	/**
+	 * TODO write javadoc
+	 * 
+	 * @param name
+	 * @throws NameCollisionException
+	 */
+	private static void checkName(String name) throws NameCollisionException
+	{
+		for (String filename : Main.backupsDir.list()) if (filename.equals(name))
+		{
+			throw new NameCollisionException();
+		}
+	}
 	
 
 	/**

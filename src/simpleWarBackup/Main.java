@@ -51,71 +51,17 @@ public class Main extends JavaPlugin implements Listener
 	{
 		initialize(this);
 		
-		//TEST
-		getCommand("testBackupChunk").setExecutor(this);
-		getCommand("testRestoreChunk").setExecutor(this);
+		getCommand("warbackup").setExecutor(this);
 	}
 	
 	
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+	/**
+	 * TODO write javadoc
+	 */
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args)
 	{
-		if (!(sender instanceof Player))      return false; 
-		if (!sender.getName().equals("iie"))  return false;
-		
-		sender.sendMessage("some command received");
-		Location loc = ((Player) sender).getLocation();
-		World world  = loc.getWorld();
-		Chunk chunk  = loc.getChunk();
-		
-		//test-chunks to be test-restored
-		int[][] xz = {{187, 187}, 
-		              {40 , 40 }};
-		
-		if (command.getName().equals("testBackupChunk"))
-		{
-			try { BackupIO.backup((CraftWorld) world, "test", (CraftChunk) chunk); }
-			catch (IOException e) { e.printStackTrace(); }
-		}
-		else if (command.getName().equals("testRestoreChunk"))
-		{
-			sender.sendMessage("testRestoreChunk command received");
-			for (int[] coords : xz)
-			{
-				if (world.isChunkLoaded(coords[0], coords[1]))
-				{
-					sender.sendMessage("chunk " + coords[0] + ", " + coords[1] + " is still loaded");
-					return false;
-				}
-			}
-			{
-				sender.sendMessage("chunk is not loaded");
-				try 
-				{ 
-					for (int[] coords : xz)
-					{
-						sender.sendMessage(
-								BackupIO.restoreTest(coords[0], coords[1]) ? "restore worked" : 
-								                                             "restore failed");
-					}
-				} 
-			    catch (IOException e) 
-				{ 
-			    	e.printStackTrace(); 
-			    	sender.sendMessage("IOException, restore failed");
-			    }
-			}
-		}
+		//world.isChunkLoaded(x,z);
 		return true;
 	}
 }

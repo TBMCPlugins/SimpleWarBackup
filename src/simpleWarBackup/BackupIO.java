@@ -156,64 +156,6 @@ public class BackupIO
 	 */
 	private static void restoreAll(CraftWorld world, String backup)
 	{
-		
-	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	public static boolean restoreTest(int x, int z) throws IOException
-	{
-		CraftWorld world = (CraftWorld) Bukkit.getWorld("world");
-		
-		File worldDir  = new File(Main.backupsDir, "world");
-		File backupDir = new File(worldDir, "test");
-		File regionDir = new File(backupDir, "region");
-		File mcaFile   = new File(regionDir, "r.1.1.mca");
-		
-		RegionFile regionFileSource = RegionFile_Cache.get(backupDir, x, z);
-		RegionFile regionFileTarget = RegionFile_Cache.getFromMinecraft(world, x, z);
-		
-		DataInputStream  dataInput  = regionFileSource.a(x & 31, z & 31);
-		DataOutputStream dataOutput = regionFileTarget.b(x & 31, z & 31);
-		
-		/* Look in RegionFile to find how to get length.
-		 * Length is recorded in the first 4 bytes of each
-		 * chunk's data, in the body of the region file. 
-		 * 
-		 * Read header for chunk data location, seek to
-		 * that location and read first 4 bytes. This is
-		 * the length for byte[] buf below.
-		 */
-		/*int length;
-		{
-			RandomAccessFile raf = RegionFileCache.getRAF(regionFileSource);
-			if (raf == null) return false;
-			...
-		}
-		
-		byte[] buf = new byte[length];
-		
-		dataInput.readFully(buf);
-		dataOutput.write(buf);
-		dataOutput.close();*/
-		
-		if (dataInput == null)
-			return false;
-		
-		NBTCompressedStreamTools.a(
-				NBTCompressedStreamTools.a(dataInput), 
-				(java.io.DataOutput) dataOutput);
-		
-		dataOutput.close();
-		
-		return true;
+		//world.isChunkLoaded(x,z);
 	}
 }
